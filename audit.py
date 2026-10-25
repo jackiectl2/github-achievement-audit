@@ -24,7 +24,7 @@ LOGIN_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\Z")
 @dataclass(frozen=True)
 class Snapshot:
     login: str
-    authored_merged_pr_search_total: int
+    public_authored_merged_pr_search_total: int
     owned_public_repo_count: int
     top_owned_repo: str | None
     top_owned_repo_stars: int
@@ -63,7 +63,9 @@ def fetch_snapshot(login: str, token: str | None = None, opener=urlopen) -> Snap
         if page > 100:
             raise ValueError("Repository pagination exceeded 100 pages")
 
-    pr_query = urlencode({"q": f"is:pr is:merged author:{login}", "per_page": 1})
+    # Authenticated search otherwise includes private PRs visible to the token.
+    # Explicit visibility keeps this report a public-only snapshot.
+    pr_query = urlencode({"q": f"is:pr is:merged is:public author:{login}", "per_page": 1})
     search = get_json(f"/search/issues?{pr_query}", token, opener)
     if not isinstance(search, dict) or not isinstance(search.get("total_count"), int):
         raise ValueError("Unexpected pull request search response from GitHub API")
@@ -71,7 +73,7 @@ def fetch_snapshot(login: str, token: str | None = None, opener=urlopen) -> Snap
     top = max(owned_repos, key=lambda repo: int(repo.get("stargazers_count") or 0), default=None)
     return Snapshot(
         login=login,
-        authored_merged_pr_search_total=search["total_count"],
+        public_authored_merged_pr_search_total=search["total_count"],
         owned_public_repo_count=len(owned_repos),
         top_owned_repo=top.get("full_name") if top else None,
         top_owned_repo_stars=int(top.get("stargazers_count") or 0) if top else 0,
@@ -80,7 +82,7 @@ def fetch_snapshot(login: str, token: str | None = None, opener=urlopen) -> Snap
 
 def render_markdown(snapshot: Snapshot) -> str:
     login = snapshot.login
-    pr_search = "https://github.com/pulls?q=" + quote(f"is:pr is:merged author:{login}")
+    pr_search = "https://github.com/pulls?q=" + quote(f"is:pr is:merged is:public author:{login}")
     repo_label = (
         f"[{snapshot.top_owned_repo}](https://github.com/{snapshot.top_owned_repo})"
         if snapshot.top_owned_repo
@@ -94,7 +96,7 @@ def render_markdown(snapshot: Snapshot) -> str:
             "",
             "| Signal | Public result |",
             "| --- | ---: |",
-            f"| [Authored merged PR search]({pr_search}) | {snapshot.authored_merged_pr_search_total} |",
+            f"| [Public authored merged PR search]({pr_search}) | {snapshot.public_authored_merged_pr_search_total} |",
             f"| Non-fork public repositories | {snapshot.owned_public_repo_count} |",
             f"| Most-starred non-fork repository: {repo_label} | {snapshot.top_owned_repo_stars} stars |",
             "",

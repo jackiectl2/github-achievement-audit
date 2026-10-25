@@ -1,6 +1,7 @@
 import io
 import json
 import unittest
+from urllib.parse import parse_qs, urlsplit
 
 from audit import fetch_snapshot, render_markdown
 
@@ -33,8 +34,9 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(snapshot.owned_public_repo_count, 1)
         self.assertEqual(snapshot.top_owned_repo, "alice/tool")
         self.assertEqual(snapshot.top_owned_repo_stars, 17)
-        self.assertEqual(snapshot.authored_merged_pr_search_total, 23)
+        self.assertEqual(snapshot.public_authored_merged_pr_search_total, 23)
         self.assertEqual(len(requested), 2)
+        self.assertIn("is:public", parse_qs(urlsplit(requested[1]).query)["q"][0])
         self.assertIn("not badge eligibility counts", render_markdown(snapshot))
 
     def test_invalid_username_is_rejected_before_network_request(self):

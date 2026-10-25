@@ -1,6 +1,6 @@
 # GitHub Achievement Audit
 
-A small, **read-only** GitHub API tool for tracking public signals relevant to profile Achievements. It lists your authored merged PR search total and your most-starred non-fork public repository. It never creates PRs, stars, comments, or follows.
+A small, **read-only** GitHub API tool for tracking public signals relevant to profile Achievements. It lists your **public** authored merged PR search total and your most-starred non-fork public repository. It never creates PRs, stars, comments, or follows.
 
 GitHub does not publish an Achievement counter API. Search totals are **not** Pull Shark counts, and repo stars do **not** guarantee Starstruck. The only definitive status is on your GitHub profile.
 
@@ -26,7 +26,7 @@ The test uses a fake HTTP response and makes no network requests.
 ## API calls
 
 - [`GET /users/{username}/repos`](https://docs.github.com/en/rest/repos/repos#list-repositories-for-a-user), paginated, filtered locally to non-forks.
-- [`GET /search/issues`](https://docs.github.com/en/rest/search/search#search-issues-and-pull-requests) with `is:pr is:merged author:LOGIN`.
+- [`GET /search/issues`](https://docs.github.com/en/rest/search/search#search-issues-and-pull-requests) with `is:pr is:merged is:public author:LOGIN`. The `is:public` qualifier matters when a token can also read private repositories.
 
 GitHub's [Acceptable Use Policies](https://docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies) prohibit inauthentic engagement and automated bulk activity. This tool is deliberately read-only and makes only the few requests needed for a snapshot.
 
